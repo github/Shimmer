@@ -352,16 +352,21 @@ namespace NSync.Client
                     app.GetAppShortcutList()
                         .Where(x => !shortcutRequestsToIgnore.Contains(x))
                         .ForEach(x => {
-                            var sl = new ShellLink(x.GetLinkTarget(applicationName, true)) {
-                                Target = x.TargetPath,
-                                IconPath = x.IconLibrary,
-                                IconIndex = x.IconIndex,
-                                Arguments = x.Arguments,
-                                WorkingDirectory = x.WorkingDirectory,
-                                Description = x.Description
-                            };
+                            var linkTarget = x.GetLinkTarget(applicationName, true);
+                            var exists = File.Exists(linkTarget);
+                            var sl = exists ? new ShellLink(linkTarget) : new ShellLink();
+                            sl.Target = x.TargetPath;
+                            sl.IconPath = x.IconLibrary;
+                            sl.IconIndex = x.IconIndex;
+                            sl.Arguments = x.Arguments;
+                            sl.WorkingDirectory = x.WorkingDirectory;
+                            sl.Description = x.Description;
 
-                            sl.Save();
+                            if (exists) {
+                                sl.Save();
+                            } else {
+                                sl.Save(linkTarget);
+                            }
                         });
                 });
         }
