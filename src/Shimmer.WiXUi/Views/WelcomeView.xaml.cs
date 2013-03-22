@@ -14,7 +14,7 @@ namespace Shimmer.WiXUi.Views
             this.OneWayBind(ViewModel, x => x.PackageMetadata.Title, x => x.Title.Text);
             this.BindCommand(ViewModel, x => x.ShouldProceed, x => x.ShouldProceed);
         }
-
+  
         public WelcomeViewModel ViewModel {
             get { return (WelcomeViewModel)GetValue(ViewModelProperty); }
             set { SetValue(ViewModelProperty, value); }

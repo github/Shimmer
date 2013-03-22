@@ -1,6 +1,4 @@
-using System;
 using ReactiveUI.Routing;
-using Shimmer.Core;
 
 namespace Shimmer.Client.WiXUi
 {

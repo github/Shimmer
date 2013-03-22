@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -59,7 +58,7 @@ namespace CreateReleasePackage
             string packagesDir = null;
             string templateSource = null;
 
-            var opts = new OptionSet() {
+            var opts = new OptionSet {
                 { "p|packages-directory=", "(Optional) The NuGet packages directory to use, omit to use default", v => packagesDir = v },
                 { "o|output-directory=", "The target directory to put the generated file", v => targetDir = v },
                 { "preprocess-template=", "The template file to parse. Part of Create-Release.ps1, ignore this", v => templateSource = v },
@@ -105,7 +104,7 @@ namespace CreateReleasePackage
                 return null;
             }
 
-            return new Dictionary<string, string>() {
+            return new Dictionary<string, string> {
                 { "input", filename },
                 { "target", targetDir },
                 { "pkgdir", packagesDir ?? ""},
@@ -125,7 +124,7 @@ namespace CreateReleasePackage
                 new {Name = "ProjectUrl", Value = zp.ProjectUrl != null ? zp.ProjectUrl.ToString() : ""},
                 new {Name = "Summary", Value = zp.Summary ?? zp.Title },
                 new {Name = "Title", Value = zp.Title},
-                new {Name = "Version", Value = noBetaRegex.Replace(zp.Version.ToString(), "") },
+                new {Name = "Version", Value = noBetaRegex.Replace(zp.Version.ToString(), "") }
             };
 
             var output = toSub.Aggregate(new StringBuilder(File.ReadAllText(templateFile)), (acc, x) =>
