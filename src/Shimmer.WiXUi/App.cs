@@ -1,20 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Reactive.Concurrency;
 using System.Reactive.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using Microsoft.Tools.WindowsInstallerXml.Bootstrapper;
 using ReactiveUI;
-using ReactiveUI.Routing;
 using Shimmer.Client.WiXUi;
 using Shimmer.WiXUi.ViewModels;
 using Shimmer.WiXUi.Views;
-using LogLevel = Microsoft.Tools.WindowsInstallerXml.Bootstrapper.LogLevel;
 
 namespace Shimmer.WiXUi
 {

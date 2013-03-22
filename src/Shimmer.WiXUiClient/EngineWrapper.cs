@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Microsoft.Tools.WindowsInstallerXml.Bootstrapper;
 
 namespace Shimmer.Client.WiXUi
@@ -20,7 +17,7 @@ namespace Shimmer.Client.WiXUi
         string EscapeString(string input);
         bool EvaluateCondition(string condition);
         string FormatString(string format);
-        void Log(Microsoft.Tools.WindowsInstallerXml.Bootstrapper.LogLevel level, string message);
+        void Log(LogLevel level, string message);
         void Plan(LaunchAction action);
         void SetLocalSource(string packageOrContainerId, string payloadId, string path);
         void SetDownloadSource(string packageOrContainerId, string payloadId, string url, string user, string password);

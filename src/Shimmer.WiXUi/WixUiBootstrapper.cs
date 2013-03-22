@@ -275,10 +275,9 @@ namespace Shimmer.WiXUi.ViewModels
             throw new Exception("Unknown View");
         }
 
-        TinyIoCContainer createDefaultKernel()
+        static TinyIoCContainer createDefaultKernel()
         {
-            var ret = new TinyIoCContainer();
-            return ret;
+            return new TinyIoCContainer();
         }
     }
 }

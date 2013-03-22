@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Authentication;
-using System.Windows;
 using Shimmer.Client;
 
 namespace ShimmerIAppUpdateTestTarget
@@ -37,7 +36,7 @@ namespace ShimmerIAppUpdateTestTarget
                 return Enumerable.Empty<ShortcutCreationRequest>();
             }
 
-            var ret = new ShortcutCreationRequest() {
+            var ret = new ShortcutCreationRequest {
                 Arguments = "--foo",
                 Description = "A test app",
                 CreationLocation = ShortcutCreationLocation.Custom,
@@ -81,7 +80,7 @@ namespace ShimmerIAppUpdateTestTarget
         public void OnVersionUninstalling(Version versionBeingUninstalled)
         {
             if (shouldThrow()) {
-                Console.WriteLine(((String) null).Length);
+                Console.WriteLine(((String) null).Length); // XXX: this seems wrong
             }
 
             setEnvVar("VersionInstalling_Called", versionBeingUninstalled);
