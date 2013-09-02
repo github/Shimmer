@@ -45,6 +45,8 @@ namespace Shimmer.Core
             }
         }
 
+        public Version Version { get { return InputPackageFile.ToVersion(); } }
+
         public string CreateReleasePackage(string outputFile, string packagesRootDir = null, Func<string, string> releaseNotesProcessor = null)
         {
             Contract.Requires(!String.IsNullOrEmpty(outputFile));
