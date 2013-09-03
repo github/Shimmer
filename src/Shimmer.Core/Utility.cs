@@ -175,6 +175,10 @@ namespace Shimmer.Core
         {
             var di = new DirectoryInfo(directoryPath);
 
+            if (!di.Exists) {
+                return;
+            }
+
             // NB: MoveFileEx blows up if you're a non-admin, so you always need a backup plan
             di.GetFiles().ForEach(x => safeDeleteFileAtNextDir(x.FullName));
             di.GetDirectories().ForEach(x => DeleteDirectoryAtNextReboot(x.FullName));
