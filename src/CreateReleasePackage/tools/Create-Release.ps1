@@ -63,7 +63,7 @@ function Create-ReleaseForProject {
         $pkgFullName = $pkg.FullName
         echo "Found package $pkgFullName"
 
-		$packageDir = Get-Nuget-Packages-Path(Join-Path $solutionDir "packages")
+		$packageDir = Get-NugetPackagesPath(Join-Path $solutionDir "packages")
 		$fullRelease = & $createReleasePackageExe -o $releaseDir -p $packageDir $pkgFullName
 
         ## NB: For absolutely zero reason whatsoever, $fullRelease ends up being the full path Three times
@@ -88,7 +88,7 @@ function Create-ReleaseForProject {
 	}
 }
 
-function Get-Nuget-Packages-Path {
+function Get-NugetPackagesPath {
     param(
         [Parameter(Mandatory = $true)]
         [string]$solutionDir
@@ -107,7 +107,7 @@ function Get-Nuget-Packages-Path {
         return $solutionDir
     }
 
-    return Get-Nuget-Packages-Path($parent)
+    return Get-NugetPackagesPath($parent)
 }
 
 if (-not $ProjectNameToBuild) {
