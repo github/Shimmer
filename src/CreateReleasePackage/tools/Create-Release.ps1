@@ -101,7 +101,10 @@ function Get-NugetPackagesPath {
     if($cfg) {
         [xml]$config = Get-Content $cfg.FullName
         $path = $config.configuration.config.add | ?{ $_.key -eq "repositorypath" } | select value
-        return $path.value
+		# Found nuget.config but it don't has repositorypath attribute
+        if($path) {
+			return $path.value
+		}
     }
 
     $parent = Split-Path $solutionDir
