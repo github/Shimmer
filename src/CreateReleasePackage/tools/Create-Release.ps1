@@ -63,7 +63,7 @@ function Create-ReleaseForProject {
         $pkgFullName = $pkg.FullName
         echo "Found package $pkgFullName"
 
-		$packageDir = Get-NugetPackagesPath($solutionDir)
+        $packageDir = Get-NugetPackagesPath($solutionDir)
         if(-not $packageDir) {
             $packageDir = Join-Path $solutionDir "packages"
         }
@@ -97,7 +97,7 @@ function Get-NugetPackagesPath {
         [string]$solutionDir
     )
 
-    $cfg = ls $solutionDir -ErrorAction SilentlyContinue | ?{ $_.Name -eq "nuget.config" } | Select-Object -first 1
+    $cfg = Get-ChildItem -Path $solutionDir -Filter nuget.config | Select-Object -first 1
     if($cfg) {
         [xml]$config = Get-Content $cfg.FullName
         $path = $config.configuration.config.add | ?{ $_.key -eq "repositorypath" } | select value
