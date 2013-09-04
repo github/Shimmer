@@ -63,7 +63,7 @@ function Create-ReleaseForProject {
         $pkgFullName = $pkg.FullName
         echo "Found package $pkgFullName"
 
-		$packageDir = Join-Path $solutionDir "packages"
+		$packageDir = Get-Nuget-Packages-Path(Join-Path $solutionDir "packages")
 		$fullRelease = & $createReleasePackageExe -o $releaseDir -p $packageDir $pkgFullName
 
         ## NB: For absolutely zero reason whatsoever, $fullRelease ends up being the full path Three times
@@ -86,6 +86,28 @@ function Create-ReleaseForProject {
         echo "Running light.exe"		
         & $lightExe -out "$releaseDir\Setup.exe" -ext "$wixDir\WixBalExtension.dll" -ext "$wixDir\WixUtilExtension.dll" "$buildDirectory\template.wixobj"
 	}
+}
+
+function Get-Nuget-Packages-Path {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$solutionDir
+    )
+
+    $configs = ls $solutionDir -ErrorAction SilentlyContinue | ?{ $_.Name -eq "nuget.config" }
+    foreach($cfg in $configs) {
+        [xml]$config = Get-Content $cfg.FullName
+        $path = $config.configuration.config.add | ?{ $_.key -eq "repositorypath" } | select value
+        return $path.value
+    }
+
+    $parent = Split-Path $solutionDir
+
+    if(-not $parent) {
+        return $solutionDir
+    }
+
+    return Get-Nuget-Packages-Path($parent)
 }
 
 if (-not $ProjectNameToBuild) {
