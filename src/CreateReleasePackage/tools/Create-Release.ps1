@@ -63,7 +63,10 @@ function Create-ReleaseForProject {
         $pkgFullName = $pkg.FullName
         echo "Found package $pkgFullName"
 
-		$packageDir = Get-NugetPackagesPath(Join-Path $solutionDir "packages")
+		$packageDir = Get-NugetPackagesPath($solutionDir)
+        if(-not $packageDir) {
+            $packageDir = Join-Path $solutionDir "packages"
+        }
 		$fullRelease = & $createReleasePackageExe -o $releaseDir -p $packageDir $pkgFullName
 
         ## NB: For absolutely zero reason whatsoever, $fullRelease ends up being the full path Three times
@@ -94,8 +97,8 @@ function Get-NugetPackagesPath {
         [string]$solutionDir
     )
 
-    $configs = ls $solutionDir -ErrorAction SilentlyContinue | ?{ $_.Name -eq "nuget.config" }
-    foreach($cfg in $configs) {
+    $cfg = ls $solutionDir -ErrorAction SilentlyContinue | ?{ $_.Name -eq "nuget.config" } | Select-Object -first 1
+    if($cfg) {
         [xml]$config = Get-Content $cfg.FullName
         $path = $config.configuration.config.add | ?{ $_.key -eq "repositorypath" } | select value
         return $path.value
@@ -104,7 +107,7 @@ function Get-NugetPackagesPath {
     $parent = Split-Path $solutionDir
 
     if(-not $parent) {
-        return $solutionDir
+        return ""
     }
 
     return Get-NugetPackagesPath($parent)
