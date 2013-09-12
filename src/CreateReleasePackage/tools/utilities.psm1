@@ -107,7 +107,7 @@ function Get-ProjectItem {
 
         $existingFile = $_.ProjectItems | Where-Object { $_.Name -eq $FileName }
 
-        if ($existingFile.length -eq 0) {
+        if ($existingFile.length -eq 0 -or $existingFile -eq $null) {
             $null
         } else {
             $existingFile[0]
