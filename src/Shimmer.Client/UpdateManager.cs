@@ -507,6 +507,10 @@ namespace Shimmer.Client
             });
         }
 
+        static Version getVersionFromFolderName(string name) {
+            return new Version(name.Substring(4)); // HACK HACK HACK
+        }
+
         IEnumerable<ShortcutCreationRequest> cleanUpOldVersions(Version newCurrentVersion)
         {
             var directory = fileSystem.GetDirectoryInfo(rootAppDirectory);
@@ -517,7 +521,7 @@ namespace Shimmer.Client
             
             return directory.GetDirectories()
                 .Where(x => x.Name.StartsWith("app-", StringComparison.InvariantCultureIgnoreCase))
-                .Where(x => x.Name != "app-" + newCurrentVersion)
+                .Where(x => getVersionFromFolderName(x.Name) <= newCurrentVersion)
                 .OrderBy(x => x.Name)
                 .SelectMany(oldAppRoot => {
                     var path = oldAppRoot.FullName;
