@@ -207,24 +207,24 @@ namespace Shimmer.Client
                 ReleaseEntry.BuildReleasesFile(PackageDirectory, fileSystem), RxApp.TaskpoolScheduler));
         }
 
-        public IObservable<Unit> FullUninstall()
+        public IObservable<Unit> FullUninstall(Version version = null)
         {
-            return acquireUpdateLock().SelectMany(_ => fullUninstall());
+            version = version ?? new Version(255, 255, 255, 255);
+
+            return acquireUpdateLock().SelectMany(_ => fullUninstall(version));
         }
 
-        IObservable<Unit> fullUninstall()
+        IObservable<Unit> fullUninstall(Version maxVersion)
         {
-            var maxVersion = new Version(255, 255, 255, 255);
-            return
-                Observable.Start(() => cleanUpOldVersions(maxVersion), RxApp.TaskpoolScheduler)
-                .SelectMany(_ => Utility.DeleteDirectory(rootAppDirectory))
-                .Catch<Unit, Exception>(ex => {
-                    log.WarnException(
-                        "Full Uninstall failed to delete root dir, punting to next reboot", ex);
-                    return Observable.Start(
-                        () => Utility.DeleteDirectoryAtNextReboot(rootAppDirectory));
-                })
-                .Aggregate(Unit.Default, (acc, x) => acc); ;
+            var previous =
+                Observable.Start(() => cleanUpOldVersions(maxVersion),
+                                 RxApp.TaskpoolScheduler);
+            var current =
+                Observable.Start(() => cleanupVersion(getDirectoryForRelease(maxVersion)),
+                                 RxApp.TaskpoolScheduler);
+
+            return previous.Merge(current)
+                .Aggregate(Unit.Default, (acc , x) => acc);
         }
 
         public void Dispose()
@@ -405,6 +405,8 @@ namespace Shimmer.Client
             // NB: We sort this list in order to guarantee that if a Net20
             // and a Net40 version of a DLL get shipped, we always end up
             // with the 4.0 version.
+            log.Info("Writing files to app directory: {0}", target.FullName);
+
             pkg.GetLibFiles().Where(x => pathIsInFrameworkProfile(x, appFrameworkVersion))
                              .OrderBy(x => x.Path)
                              .ForEach(x => CopyFileToLocation(target, x));
@@ -431,7 +433,6 @@ namespace Shimmer.Client
 
             using (var inf = x.GetStream())
             using (var of = fi.Open(FileMode.CreateNew, FileAccess.Write)) {
-                log.Debug("Writing {0} to app directory", targetPath);
                 inf.CopyTo(of);
             }
         }
@@ -512,33 +513,47 @@ namespace Shimmer.Client
             });
         }
 
+        static Version getVersionFromFolderName(string name) {
+            return new Version(name.Substring(4)); // HACK HACK HACK
+        }
+
         IEnumerable<ShortcutCreationRequest> cleanUpOldVersions(Version newCurrentVersion)
         {
             var directory = fileSystem.GetDirectoryInfo(rootAppDirectory);
             if (!directory.Exists) {
-                log.Warn("The directory '{0}' does not exist", rootAppDirectory);
+                log.Warn("cleanUpOldVersions: the directory '{0}' does not exist", rootAppDirectory);
                 return Enumerable.Empty<ShortcutCreationRequest>();
             }
             
             return directory.GetDirectories()
                 .Where(x => x.Name.StartsWith("app-", StringComparison.InvariantCultureIgnoreCase))
-                .Where(x => x.Name != "app-" + newCurrentVersion)
+                .Where(x => getVersionFromFolderName(x.Name) <= newCurrentVersion)
                 .OrderBy(x => x.Name)
-                .SelectMany(oldAppRoot => {
-                    var path = oldAppRoot.FullName;
-                    var installerHooks = new InstallerHookOperations(fileSystem, applicationName);
+                .SelectMany(cleanupVersion);
+        }
 
-                    var ret = AppDomainHelper.ExecuteInNewAppDomain(path, installerHooks.RunAppSetupCleanups);
+        IEnumerable<ShortcutCreationRequest> cleanupVersion(DirectoryInfoBase oldAppRoot)
+        {
+            if (!oldAppRoot.Exists) {
+                log.Warn("cleanUpOldVersions: the directory '{0}' does not exist", oldAppRoot.FullName);
+                return Enumerable.Empty<ShortcutCreationRequest>();
+            }
 
-                    try {
-                        Utility.DeleteDirectoryAtNextReboot(oldAppRoot.FullName);
-                    } catch (Exception ex) {
-                        var message = String.Format("Couldn't delete old app directory on next reboot {0}",
-                            oldAppRoot.FullName);
-                        log.WarnException(message, ex);
-                    }
-                    return ret;
-                });
+            var path = oldAppRoot.FullName;
+
+            var installerHooks = new InstallerHookOperations(fileSystem, applicationName);
+
+            var ret = AppDomainHelper.ExecuteInNewAppDomain(path, installerHooks.RunAppSetupCleanups);
+
+            try {
+                Utility.DeleteDirectoryAtNextReboot(oldAppRoot.FullName);
+            }
+            catch (Exception ex) {
+                var message = String.Format("Couldn't delete old app directory on next reboot {0}",
+                    oldAppRoot.FullName);
+                log.WarnException(message, ex);
+            }
+            return ret;
         }
 
         void fixPinnedExecutables(Version newCurrentVersion) 
@@ -607,13 +622,21 @@ namespace Shimmer.Client
         {
             var di = fileSystem.GetDirectoryInfo(rootAppDirectory);
 
+            log.Info("cleanDeadVersions: for version {0}", currentVersion);
+
+            string currentVersionFolder = null;
+            if (currentVersion != null) {
+                currentVersionFolder = getDirectoryForRelease(currentVersion).Name;
+                log.Info("cleanDeadVersions: exclude folder {0}", currentVersionFolder);
+            }
+
             // NB: If we try to access a directory that has already been 
             // scheduled for deletion by MoveFileEx it throws what seems like
             // NT's only error code, ERROR_ACCESS_DENIED. Squelch errors that
             // come from here.
             return di.GetDirectories().ToObservable()
                 .Where(x => x.Name.ToLowerInvariant().Contains("app-"))
-                .Where(x => currentVersion != null ? x.Name != getDirectoryForRelease(currentVersion).Name : true)
+                .Where(x => x.Name != currentVersionFolder)
                 .SelectMany(x => Utility.DeleteDirectory(x.FullName, RxApp.TaskpoolScheduler))
                     .LoggedCatch<Unit, UpdateManager, UnauthorizedAccessException>(this, _ => Observable.Return(Unit.Default))
                 .Aggregate(Unit.Default, (acc, x) => acc);
