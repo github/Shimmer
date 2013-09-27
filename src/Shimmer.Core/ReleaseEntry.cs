@@ -71,6 +71,7 @@ namespace Shimmer.Core
         public static ReleaseEntry ParseReleaseEntry(string entry)
         {
             Contract.Requires(entry != null);
+            Contract.Requires(entry.Contains(Path.DirectorySeparatorChar) == false);
 
             entry = commentRegex.Replace(entry, "");
             if (String.IsNullOrWhiteSpace(entry)) {
@@ -131,6 +132,7 @@ namespace Shimmer.Core
         {
             Contract.Requires(file != null && file.CanRead);
             Contract.Requires(!String.IsNullOrEmpty(filename));
+            Contract.Requires(filename.Contains(Path.DirectorySeparatorChar) == false);
 
             var hash = Utility.CalculateStreamSHA1(file); 
             return new ReleaseEntry(hash, filename, file.Length, filenameIsDeltaFile(filename));
@@ -138,6 +140,9 @@ namespace Shimmer.Core
 
         public static ReleaseEntry GenerateFromFile(string path)
         {
+            Contract.Requires(!string.IsNullOrWhiteSpace(path));
+            Contract.Requires(!string.IsNullOrWhiteSpace(Path.GetFileName(path)));
+
             using (var inf = File.OpenRead(path)) {
                 return GenerateFromFile(inf, Path.GetFileName(path));
             }

@@ -247,6 +247,8 @@ namespace Shimmer.Core
         void verifyPatchedFile(string relativeFilePath, string inputFile, string tempTargetFile)
         {
             Contract.Requires(inputFile != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(tempTargetFile));
+            Contract.Requires(!string.IsNullOrWhiteSpace(Path.GetFileName(tempTargetFile)));
 
             var shaFile = Regex.Replace(inputFile, @"\.diff$", ".shasum");
             var expectedReleaseEntry = ReleaseEntry.ParseReleaseEntry(File.ReadAllText(shaFile, Encoding.UTF8));

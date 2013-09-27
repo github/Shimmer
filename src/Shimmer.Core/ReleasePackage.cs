@@ -29,7 +29,16 @@ namespace Shimmer.Core
     [ContractClassFor(typeof(IReleasePackage))]
     public abstract class ReleasePackageContract : IReleasePackage
     {
-        public abstract string InputPackageFile { get; }
+        public string InputPackageFile
+        {
+            get
+            {
+                Contract.Ensures(string.IsNullOrWhiteSpace(Contract.Result<string>()));
+
+                return default(string);
+            }
+        }
+
         public abstract string ReleasePackageFile { get; }
         public abstract string SuggestedReleaseFileName { get; }
 
@@ -77,6 +86,8 @@ namespace Shimmer.Core
 
         public ReleasePackage(string inputPackageFile, bool isReleasePackage = false)
         {
+            Contract.Requires(string.IsNullOrEmpty(inputPackageFile));
+
             InputPackageFile = inputPackageFile;
 
             if (isReleasePackage) {

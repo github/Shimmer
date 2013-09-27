@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -11,11 +12,15 @@ namespace Shimmer.Core.Extensions
     {
         public static Version ToVersion(this IReleasePackage package)
         {
+            Contract.Requires(!string.IsNullOrWhiteSpace(package.InputPackageFile));
+
             return package.InputPackageFile.ToVersion();
         }
 
         public static Version ToVersion(this string fileName)
         {
+            Contract.Requires(!string.IsNullOrWhiteSpace(fileName));
+
             var parts = (new FileInfo(fileName)).Name
                     .Replace(".nupkg", "").Replace("-delta", "")
                     .Split('.', '-').Reverse();
