@@ -10,19 +10,37 @@ using ReactiveUIMicro;
 
 namespace Shimmer.Core
 {
+    [ContractClass(typeof(DeltaPackageBuilderContract))]
     public interface IDeltaPackageBuilder
     {
         ReleasePackage CreateDeltaPackage(ReleasePackage basePackage, ReleasePackage newPackage, string outputFile);
         ReleasePackage ApplyDeltaPackage(ReleasePackage basePackage, ReleasePackage deltaPackage, string outputFile);
     }
 
-    public class DeltaPackageBuilder : IEnableLogger, IDeltaPackageBuilder
+    [ContractClassFor(typeof(IDeltaPackageBuilder))]
+    abstract class DeltaPackageBuilderContract : IDeltaPackageBuilder
     {
         public ReleasePackage CreateDeltaPackage(ReleasePackage basePackage, ReleasePackage newPackage, string outputFile)
         {
             Contract.Requires(basePackage != null);
             Contract.Requires(!String.IsNullOrEmpty(outputFile) && !File.Exists(outputFile));
 
+            return default(ReleasePackage);
+        }
+
+        public ReleasePackage ApplyDeltaPackage(ReleasePackage basePackage, ReleasePackage deltaPackage, string outputFile)
+        {
+            Contract.Requires(deltaPackage != null);
+            Contract.Requires(!String.IsNullOrEmpty(outputFile) && !File.Exists(outputFile));
+
+            return default(ReleasePackage);
+        }
+    }
+
+    public class DeltaPackageBuilder : IEnableLogger, IDeltaPackageBuilder
+    {
+        public ReleasePackage CreateDeltaPackage(ReleasePackage basePackage, ReleasePackage newPackage, string outputFile)
+        {
             if (basePackage.Version > newPackage.Version) {
                 var message = String.Format(
                     "You cannot create a delta package based on version {0} as it is a later version than {1}",
@@ -85,9 +103,6 @@ namespace Shimmer.Core
 
         public ReleasePackage ApplyDeltaPackage(ReleasePackage basePackage, ReleasePackage deltaPackage, string outputFile)
         {
-            Contract.Requires(deltaPackage != null);
-            Contract.Requires(!String.IsNullOrEmpty(outputFile) && !File.Exists(outputFile));
-
             string workingPath;
             string deltaPath;
 
