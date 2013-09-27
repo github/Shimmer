@@ -16,6 +16,7 @@ using Shimmer.Core.Extensions;
 
 namespace Shimmer.Core
 {
+    [ContractClass(typeof(ReleasePackageContract))]
     public interface IReleasePackage
     {
         string InputPackageFile { get; }
@@ -23,6 +24,22 @@ namespace Shimmer.Core
         string SuggestedReleaseFileName { get; }
 
         string CreateReleasePackage(string outputFile, string packagesRootDir = null, Func<string, string> releaseNotesProcessor = null);
+    }
+
+    [ContractClassFor(typeof(IReleasePackage))]
+    public abstract class ReleasePackageContract : IReleasePackage
+    {
+        public abstract string InputPackageFile { get; }
+        public abstract string ReleasePackageFile { get; }
+        public abstract string SuggestedReleaseFileName { get; }
+
+        public string CreateReleasePackage(string outputFile, string packagesRootDir = null,
+            Func<string, string> releaseNotesProcessor = null)
+        {
+            Contract.Requires(!String.IsNullOrEmpty(outputFile));
+
+            return default(string);
+        }
     }
 
     public static class VersionComparer
@@ -81,8 +98,6 @@ namespace Shimmer.Core
 
         public string CreateReleasePackage(string outputFile, string packagesRootDir = null, Func<string, string> releaseNotesProcessor = null)
         {
-            Contract.Requires(!String.IsNullOrEmpty(outputFile));
-
             if (ReleasePackageFile != null) {
                 return ReleasePackageFile;
             }
