@@ -157,6 +157,8 @@ namespace Shimmer.Core
 
         void createDeltaForSingleFile(FileInfo targetFile, DirectoryInfo workingDirectory, Dictionary<string, string> baseFileListing)
         {
+            Contract.Requires(workingDirectory.FullName.Length > 0);
+
             // NB: There are three cases here that we'll handle:
             //
             // 1. Exists only in new => leave it alone, we'll use it directly.
@@ -198,6 +200,10 @@ namespace Shimmer.Core
 
         void applyDiffToFile(string deltaPath, string relativeFilePath, string workingDirectory)
         {
+            Contract.Requires(deltaPath != null);
+            Contract.Requires(relativeFilePath != null);
+            Contract.Requires(workingDirectory != null);
+
             var inputFile = Path.Combine(deltaPath, relativeFilePath);
             var finalTarget = Path.Combine(workingDirectory, Regex.Replace(relativeFilePath, @".diff$", ""));
 
@@ -240,6 +246,8 @@ namespace Shimmer.Core
 
         void verifyPatchedFile(string relativeFilePath, string inputFile, string tempTargetFile)
         {
+            Contract.Requires(inputFile != null);
+
             var shaFile = Regex.Replace(inputFile, @"\.diff$", ".shasum");
             var expectedReleaseEntry = ReleaseEntry.ParseReleaseEntry(File.ReadAllText(shaFile, Encoding.UTF8));
             var actualReleaseEntry = ReleaseEntry.GenerateFromFile(tempTargetFile);

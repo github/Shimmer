@@ -183,6 +183,8 @@ namespace Shimmer.Core
 
         void removeDeveloperDocumentation(DirectoryInfo expandedRepoPath)
         {
+            Contract.Requires(expandedRepoPath != null && expandedRepoPath.Exists);
+
             expandedRepoPath.GetAllFilesRecursively()
                 .Where(x => x.Name.EndsWith(".dll", true, CultureInfo.InvariantCulture))
                 .Select(x => new FileInfo(x.FullName.ToLowerInvariant().Replace(".dll", ".xml")))
@@ -190,8 +192,10 @@ namespace Shimmer.Core
                 .ForEach(x => x.Delete());
         }
 
-        bool isNonDesktopAssembly(string path)
+        static bool isNonDesktopAssembly(string path)
         {
+            Contract.Requires(path.Length >= 4);
+
             // NB: Nuke Silverlight, WinRT, WindowsPhone and Xamarin assemblies. 
             // We can't tell as easily if other profiles can be removed because 
             // you can load net20 DLLs inside .NET 4.0 apps
@@ -204,6 +208,8 @@ namespace Shimmer.Core
 
         void renderReleaseNotesMarkdown(string specPath, Func<string, string> releaseNotesProcessor)
         {
+            Contract.Requires(specPath != null && File.Exists(specPath));
+
             var doc = new XmlDocument();
             doc.Load(specPath);
 
@@ -229,6 +235,8 @@ namespace Shimmer.Core
 
         void removeDependenciesFromPackageSpec(string specPath)
         {
+            Contract.Requires(specPath != null && File.Exists(specPath));
+
             var xdoc = new XmlDocument();
             xdoc.Load(specPath);
 
@@ -295,12 +303,16 @@ namespace Shimmer.Core
 
         static IPackage findPackageFromNameInList(string id, IVersionSpec versionSpec, IEnumerable<IPackage> packageList)
         {
+            Contract.Requires(packageList != null);
+
             return packageList.Where(x => String.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase)).ToArray()
                 .FirstOrDefault(x => VersionComparer.Matches(versionSpec, x.Version));
         }
 
         static internal void addDeltaFilesToContentTypes(string rootDirectory)
         {
+            Contract.Requires(rootDirectory != null);
+
             var doc = new XmlDocument();
             var path = Path.Combine(rootDirectory, "[Content_Types].xml");
             doc.Load(path);
