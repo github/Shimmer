@@ -57,6 +57,9 @@
 #endif
 
 #endregion
+
+using System.Diagnostics.Contracts;
+
 namespace TinyIoC
 {
     using System;
@@ -502,15 +505,19 @@ namespace TinyIoC
         public TinyIoCAutoRegistrationException(Type registerType, IEnumerable<Type> types)
             : base(String.Format(ERROR_TEXT, registerType, GetTypesString(types)))
         {
+            Contract.Requires(types != null);
         }
 
         public TinyIoCAutoRegistrationException(Type registerType, IEnumerable<Type> types, Exception innerException)
             : base(String.Format(ERROR_TEXT, registerType, GetTypesString(types)), innerException)
         {
+            Contract.Requires(types != null);
         }
 
         private static string GetTypesString(IEnumerable<Type> types)
         {
+            Contract.Requires(types != null);
+
             var typeNames = from type in types
                             select type.FullName;
 
@@ -958,6 +965,8 @@ namespace TinyIoC
         /// <param name="assemblies">Assemblies to process</param>
         public void AutoRegister(IEnumerable<Assembly> assemblies)
         {
+            Contract.Requires(assemblies != null);
+
             AutoRegisterInternal(assemblies, true, null);
         }
 
@@ -972,6 +981,8 @@ namespace TinyIoC
         /// <param name="registrationPredicate">Predicate to determine if a particular type should be registered</param>
         public void AutoRegister(IEnumerable<Assembly> assemblies, Func<Type, bool> registrationPredicate)
         {
+            Contract.Requires(assemblies != null);
+
             AutoRegisterInternal(assemblies, true, registrationPredicate);
         }
 
@@ -983,6 +994,8 @@ namespace TinyIoC
         /// <exception cref="TinyIoCAutoRegistrationException"/>
         public void AutoRegister(IEnumerable<Assembly> assemblies, bool ignoreDuplicateImplementations)
         {
+            Contract.Requires(assemblies != null);
+
             AutoRegisterInternal(assemblies, ignoreDuplicateImplementations, null);
         }
 
@@ -996,6 +1009,8 @@ namespace TinyIoC
         /// <exception cref="TinyIoCAutoRegistrationException"/>
         public void AutoRegister(IEnumerable<Assembly> assemblies, bool ignoreDuplicateImplementations, Func<Type, bool> registrationPredicate)
         {
+            Contract.Requires(assemblies != null);
+
             AutoRegisterInternal(assemblies, ignoreDuplicateImplementations, registrationPredicate);
         }
 
@@ -2909,6 +2924,8 @@ namespace TinyIoC
         private readonly object _AutoRegisterLock = new object();
         private void AutoRegisterInternal(IEnumerable<Assembly> assemblies, bool ignoreDuplicateImplementations, Func<Type, bool> registrationPredicate)
         {
+            Contract.Requires(assemblies != null);
+
             lock (_AutoRegisterLock)
             {
                 var types = assemblies.SelectMany(a => a.SafeGetTypes()).Where(t => !IsIgnoredType(t, registrationPredicate)).ToList();
