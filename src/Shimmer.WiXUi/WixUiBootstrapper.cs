@@ -80,8 +80,20 @@ namespace Shimmer.WiXUi.ViewModels
 
             registerExtensionDlls(Kernel);
 
+            wixEvents.DetectPackageCompleteObs.Do(args =>
+                this.Log().Info("DetectPackageCompleteObs: got id: '{0}', state: '{1}', status: '{2}'", args.PackageId, args.State, args.Status));
+
+            wixEvents.PlanCompleteObs.Do(args =>
+                this.Log().Info("PlanCompleteObs: got status: '{0}'", args.Status));
+
+            wixEvents.ApplyCompleteObs.Do(args =>
+                this.Log().Info("ApplyCompleteObs: got restart: '{0}', result: '{1}', status: '{2}'", args.Restart, args.Result, args.Status));
+
             UserError.RegisterHandler(ex => {
                 this.Log().ErrorException("Something unexpected happened", ex.InnerException);
+
+                var installManager = new InstallManager(BundledRelease, targetRootDirectory);
+                installManager.CleanDirectory().Wait();
 
                 if (wixEvents.DisplayMode != Display.Full) {
                     this.Log().Error(ex.ErrorMessage);
@@ -100,13 +112,17 @@ namespace Shimmer.WiXUi.ViewModels
             bundledPackageMetadata = new Lazy<IPackage>(openBundledPackage);
 
             wixEvents.DetectPackageCompleteObs.Subscribe(eventArgs => {
-                this.Log().Info("DetectPackageCompleteObs: got id: '{0}', state: '{1}', status: '{2}'", eventArgs.PackageId, eventArgs.State, eventArgs.Status);
 
                 var error = convertHResultToError(eventArgs.Status);
                 if (error != null) {
                     UserError.Throw(error);
                     return;
                 }
+
+                // we now have multiple applications in the chain
+                // only run this code after the last entry in the chain
+                if (eventArgs.PackageId != "UserApplicationId")
+                    return;
 
                 if (wixEvents.Action == LaunchAction.Uninstall) {
 
@@ -150,9 +166,9 @@ namespace Shimmer.WiXUi.ViewModels
             var executablesToStart = Enumerable.Empty<string>();
 
             wixEvents.PlanCompleteObs.Subscribe(eventArgs => {
-                this.Log().Info("PlanCompleteObs: got status: '{0}'", eventArgs.Status);
 
                 var installManager = new InstallManager(BundledRelease, targetRootDirectory);
+
                 var error = convertHResultToError(eventArgs.Status);
                 if (error != null) {
                     UserError.Throw(error);
@@ -160,7 +176,15 @@ namespace Shimmer.WiXUi.ViewModels
                 }
 
                 if (wixEvents.Action == LaunchAction.Uninstall) {
-                    var task = installManager.ExecuteUninstall(BundledRelease.Version);
+
+                    // embedded view is fired as part of running a newer installer
+                    // otherwise it is a user-initiated uninstall
+
+                    var version = wixEvents.DisplayMode == Display.Embedded
+                                    ? BundledRelease.Version
+                                    : new Version(255,255,255,255);
+
+                    var task = installManager.ExecuteUninstall(version);
                     task.Subscribe(
                         _ => wixEvents.Engine.Apply(wixEvents.MainWindowHwnd),
                         ex => UserError.Throw(new UserError("Failed to uninstall", ex.Message, innerException: ex)));
@@ -194,7 +218,6 @@ namespace Shimmer.WiXUi.ViewModels
             });
 
             wixEvents.ApplyCompleteObs.Subscribe(eventArgs => {
-                this.Log().Info("ApplyCompleteObs: got restart: '{0}', result: '{1}', status: '{2}'", eventArgs.Restart, eventArgs.Result, eventArgs.Status);
 
                 var error = convertHResultToError(eventArgs.Status);
                 if (error != null) {
