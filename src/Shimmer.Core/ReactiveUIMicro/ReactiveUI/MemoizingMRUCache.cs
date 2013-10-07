@@ -48,7 +48,12 @@ namespace ReactiveUIMicro
             InvalidateAll();
         }
 
-        public TVal Get(TParam key) { return Get(key, null); }
+        public TVal Get(TParam key)
+        {
+            Contract.Requires(key != null);
+
+            return Get(key, null);
+        }
 
         /// <summary>
         /// Evaluates the function provided, returning the cached value if possible
@@ -131,7 +136,7 @@ namespace ReactiveUIMicro
             /* We have to remove them one-by-one to call the release function
              * We ToArray() this so we don't get a "modifying collection while
              * enumerating" exception. */
-            foreach (var v in cacheEntries.Keys.ToArray()) { Invalidate(v); }
+            foreach (var v in cacheEntries.Keys.ToArray()) { if (v != null) { Invalidate(v); } }
         }
 
         /// <summary>

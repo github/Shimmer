@@ -10,19 +10,37 @@ using ReactiveUIMicro;
 
 namespace Shimmer.Core
 {
+    [ContractClass(typeof(DeltaPackageBuilderContract))]
     public interface IDeltaPackageBuilder
     {
         ReleasePackage CreateDeltaPackage(ReleasePackage basePackage, ReleasePackage newPackage, string outputFile);
         ReleasePackage ApplyDeltaPackage(ReleasePackage basePackage, ReleasePackage deltaPackage, string outputFile);
     }
 
-    public class DeltaPackageBuilder : IEnableLogger, IDeltaPackageBuilder
+    [ContractClassFor(typeof(IDeltaPackageBuilder))]
+    abstract class DeltaPackageBuilderContract : IDeltaPackageBuilder
     {
         public ReleasePackage CreateDeltaPackage(ReleasePackage basePackage, ReleasePackage newPackage, string outputFile)
         {
             Contract.Requires(basePackage != null);
             Contract.Requires(!String.IsNullOrEmpty(outputFile) && !File.Exists(outputFile));
 
+            return default(ReleasePackage);
+        }
+
+        public ReleasePackage ApplyDeltaPackage(ReleasePackage basePackage, ReleasePackage deltaPackage, string outputFile)
+        {
+            Contract.Requires(deltaPackage != null);
+            Contract.Requires(!String.IsNullOrEmpty(outputFile) && !File.Exists(outputFile));
+
+            return default(ReleasePackage);
+        }
+    }
+
+    public class DeltaPackageBuilder : IEnableLogger, IDeltaPackageBuilder
+    {
+        public ReleasePackage CreateDeltaPackage(ReleasePackage basePackage, ReleasePackage newPackage, string outputFile)
+        {
             if (basePackage.Version > newPackage.Version) {
                 var message = String.Format(
                     "You cannot create a delta package based on version {0} as it is a later version than {1}",
@@ -85,9 +103,6 @@ namespace Shimmer.Core
 
         public ReleasePackage ApplyDeltaPackage(ReleasePackage basePackage, ReleasePackage deltaPackage, string outputFile)
         {
-            Contract.Requires(deltaPackage != null);
-            Contract.Requires(!String.IsNullOrEmpty(outputFile) && !File.Exists(outputFile));
-
             string workingPath;
             string deltaPath;
 
@@ -142,6 +157,8 @@ namespace Shimmer.Core
 
         void createDeltaForSingleFile(FileInfo targetFile, DirectoryInfo workingDirectory, Dictionary<string, string> baseFileListing)
         {
+            Contract.Requires(workingDirectory.FullName.Length > 0);
+
             // NB: There are three cases here that we'll handle:
             //
             // 1. Exists only in new => leave it alone, we'll use it directly.
@@ -183,6 +200,10 @@ namespace Shimmer.Core
 
         void applyDiffToFile(string deltaPath, string relativeFilePath, string workingDirectory)
         {
+            Contract.Requires(deltaPath != null);
+            Contract.Requires(relativeFilePath != null);
+            Contract.Requires(workingDirectory != null);
+
             var inputFile = Path.Combine(deltaPath, relativeFilePath);
             var finalTarget = Path.Combine(workingDirectory, Regex.Replace(relativeFilePath, @".diff$", ""));
 
@@ -225,6 +246,10 @@ namespace Shimmer.Core
 
         void verifyPatchedFile(string relativeFilePath, string inputFile, string tempTargetFile)
         {
+            Contract.Requires(inputFile != null);
+            Contract.Requires(!string.IsNullOrWhiteSpace(tempTargetFile));
+            Contract.Requires(!string.IsNullOrWhiteSpace(Path.GetFileName(tempTargetFile)));
+
             var shaFile = Regex.Replace(inputFile, @"\.diff$", ".shasum");
             var expectedReleaseEntry = ReleaseEntry.ParseReleaseEntry(File.ReadAllText(shaFile, Encoding.UTF8));
             var actualReleaseEntry = ReleaseEntry.GenerateFromFile(tempTargetFile);
