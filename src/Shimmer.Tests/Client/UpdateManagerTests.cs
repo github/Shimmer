@@ -2,7 +2,9 @@
 using System.Linq;
 using System.Reactive.Linq;
 using System.Text;
+using AssertExLib;
 using Moq;
+using ReactiveUIMicro;
 using Shimmer.Client;
 using Shimmer.Core;
 using Shimmer.Tests.TestHelpers;
@@ -180,9 +182,11 @@ namespace Shimmer.Tests.Client
                         Assert.False(updateInfo.ReleasesToApply.First().IsDelta);
                     }
                 }
-
             }
+        }
 
+        public class CheckForUpdatesTests
+        {
             [Fact]
             public void WhenFolderDoesNotExistThrowHelpfulError()
             {
@@ -208,6 +212,40 @@ namespace Shimmer.Tests.Client
                     using (fixture) {
                         Assert.Throws<ShimmerConfigurationException>(
                             () => fixture.CheckForUpdate().Wait());
+                    }
+                }
+            }
+
+
+            [Fact]
+            public void WhenFolderDoesNotExistThrowHelpfulErrorAsync()
+            {
+                string tempDir;
+                using (Utility.WithTempDirectory(out tempDir))
+                {
+                    var directory = Path.Combine(tempDir, "missing-folder");
+                    var fixture = new UpdateManager(directory, "MyAppName", FrameworkVersion.Net40);
+
+                    using (fixture)
+                    {
+                        AssertEx.TaskThrows<ShimmerConfigurationException>(
+                            async () => await fixture.CheckForUpdate());
+                    }
+                }
+            }
+
+            [Fact]
+            public void WhenReleasesFileDoesntExistThrowACustomErrorAsync()
+            {
+                string tempDir;
+                using (Utility.WithTempDirectory(out tempDir))
+                {
+                    var fixture = new UpdateManager(tempDir, "MyAppName", FrameworkVersion.Net40);
+
+                    using (fixture)
+                    {
+                        AssertEx.TaskThrows<ShimmerConfigurationException>(
+                            async () => await fixture.CheckForUpdate());
                     }
                 }
             }
