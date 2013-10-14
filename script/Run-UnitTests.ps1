@@ -18,7 +18,7 @@ function Run-XUnit([string]$project, [int]$timeoutDuration) {
         $output += Get-Content $outputPath
         $exitCode = $process.ExitCode
     } else {
-        $output += "Tests timed out. Backtrace:"
+        $output += "Tests timed out"
         $exitCode = 9999
     }
     Stop-Process -InputObject $process

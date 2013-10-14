@@ -68,6 +68,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="AssertExLib">
+      <HintPath>..\packages\AssertEx.1.0.0\lib\net40\AssertExLib.dll</HintPath>
+    </Reference>
     <Reference Include="BootstrapperCore, Version=3.0.0.0, Culture=neutral, PublicKeyToken=ce35f76fcda82bad, processorArchitecture=MSIL" />
     <Reference Include="Ionic.Zip, Version=1.9.1.9000, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
