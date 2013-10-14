@@ -216,7 +216,6 @@ namespace Shimmer.Tests.Client
                 }
             }
 
-
             [Fact]
             public void WhenFolderDoesNotExistThrowHelpfulErrorAsync()
             {
@@ -228,8 +227,13 @@ namespace Shimmer.Tests.Client
 
                     using (fixture)
                     {
-                        AssertEx.TaskThrows<ShimmerConfigurationException>(
+                        var ex = AssertEx.TaskThrows<ShimmerConfigurationException>(
                             async () => await fixture.CheckForUpdate());
+
+                        Assert.False(string.IsNullOrWhiteSpace(ex.StackTrace));
+
+                        var firstLine = ex.StackTrace.Substring(0, ex.StackTrace.IndexOf("\r\n"));
+                        Assert.True(firstLine.Contains("Shimmer.Client.UpdateManager.checkForUpdate("));
                     }
                 }
             }
@@ -244,8 +248,13 @@ namespace Shimmer.Tests.Client
 
                     using (fixture)
                     {
-                        AssertEx.TaskThrows<ShimmerConfigurationException>(
+                        var ex = AssertEx.TaskThrows<ShimmerConfigurationException>(
                             async () => await fixture.CheckForUpdate());
+
+                        Assert.False(string.IsNullOrWhiteSpace(ex.StackTrace), "The stacktrace is empty");
+
+                        var firstLine = ex.StackTrace.Substring(0, ex.StackTrace.IndexOf("\r\n"));
+                        Assert.True(firstLine.Contains("Shimmer.Client.UpdateManager.checkForUpdate("));
                     }
                 }
             }

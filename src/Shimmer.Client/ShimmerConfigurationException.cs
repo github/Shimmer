@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace Shimmer.Client
+﻿namespace Shimmer.Client
 {
-    public class ShimmerConfigurationException : Exception
+    public class ShimmerConfigurationException : FrozenException
     {
         public ShimmerConfigurationException(string message) : base(message) { }
     }
