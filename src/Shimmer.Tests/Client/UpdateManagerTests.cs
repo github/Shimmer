@@ -233,7 +233,7 @@ namespace Shimmer.Tests.Client
                         Assert.False(string.IsNullOrWhiteSpace(ex.StackTrace));
 
                         var firstLine = ex.StackTrace.Substring(0, ex.StackTrace.IndexOf("\r\n"));
-                        Assert.True(firstLine.Contains("Shimmer.Client.UpdateManager.checkForUpdate("));
+                        Assert.True(firstLine.Contains("at Shimmer.Client.UpdateManager"), "Got stacktrace: " + ex.StackTrace);
                     }
                 }
             }
@@ -254,7 +254,7 @@ namespace Shimmer.Tests.Client
                         Assert.False(string.IsNullOrWhiteSpace(ex.StackTrace), "The stacktrace is empty");
 
                         var firstLine = ex.StackTrace.Substring(0, ex.StackTrace.IndexOf("\r\n"));
-                        Assert.True(firstLine.Contains("Shimmer.Client.UpdateManager.checkForUpdate("));
+                        Assert.True(firstLine.Contains("at Shimmer.Client.UpdateManager"), "Got stacktrace: " + ex.StackTrace);
                     }
                 }
             }
