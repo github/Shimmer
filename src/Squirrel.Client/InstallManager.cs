@@ -12,6 +12,8 @@ using NuGet;
 using ReactiveUIMicro;
 using Squirrel.Client.Extensions;
 using Squirrel.Core;
+using System.IO.Pipes;
+using System.Security.Principal;
 
 namespace Squirrel.Client
 {
@@ -165,12 +167,88 @@ namespace Squirrel.Client
 
         public IObservable<Unit> ExecuteUninstall(Version version = null)
         {
+            // Request the app exit if it's running
+            // TODO: might want to adjust timeout depending on whether perceptability is an issue
+            var pipeClient = new NamedPipeClientStream(".", GetPipeName(BundledRelease.PackageName), PipeDirection.InOut, PipeOptions.None);
+            bool connected = false;
+            try
+            {
+                pipeClient.Connect(1000);
+                connected = true;
+            }
+            catch (TimeoutException) { }
+
+            if (connected)
+            {
+                var buffer = new byte[validateBytes.Length];
+                pipeClient.Read(buffer, 0, validateBytes.Length);
+
+                if (buffer.SequenceEqual(validateBytes))
+                {
+                    pipeClient.Write(exitMessage, 0, exitMessage.Length);
+                    log.Info("Attempted to request running instance to exit");
+                }
+                else
+                {
+                    log.Info("Connected to a named pipe but didn't respond or wasn't Squirrel");
+                }
+            }
+            else
+            {
+                log.Info("No running instances found to request exit");
+            }
+
+            // Run uninstall
             var updateManager = new UpdateManager("http://lol", BundledRelease.PackageName, FrameworkVersion.Net40, TargetRootDirectory);
 
             return updateManager.FullUninstall(version)
                 .ObserveOn(RxApp.DeferredScheduler)
                 .Log(this, "Full uninstall")
                 .Finally(updateManager.Dispose);
+        }
+        
+        // TODO: Clean up
+        // TODO: Should the client validate the server or the other way around? Should there be validation?
+        private static readonly byte[] validateBytes = new[] { 'S', 'Q', 'U', 'I', 'R', 'R', 'E', 'L' }.Select(x => (byte)x).ToArray();
+        private static readonly byte[] exitMessage = new[] { 'E', 'X', 'I', 'T' }.Select(x => (byte)x).ToArray();
+        public static IObservable<Unit> ListenForClose(string applicationName)
+        {
+            var log = LogManager.GetLogger<InstallManager>();
+
+            var subject = new Subject<Unit>();
+
+            Task.Factory.StartNew(() => {
+                var pipeServer = new NamedPipeServerStream(GetPipeName(applicationName), PipeDirection.InOut);
+                while (true)
+                {
+                    pipeServer.WaitForConnection();
+                    try
+                    {
+                        pipeServer.Write(validateBytes, 0, validateBytes.Length);
+                        var message = new byte[8];
+                        pipeServer.Read(message, 0, message.Length);
+                        if (message.Take(exitMessage.Length).SequenceEqual(exitMessage))
+                        {
+                            subject.OnNext(Unit.Default);
+                            log.Info("Named pipe server received exit request");
+                        }
+                        else
+                            log.Info("Named pipe server received unknown message");
+                    }
+                    catch (IOException ex)
+                    {
+                        log.ErrorException("Named pipe server failed", ex);
+                    }
+                }
+            });
+
+            return subject;
+        }
+
+        // TODO: Clean up
+        private static string GetPipeName(string applicationName)
+        {
+            return "SquirrelPipe " + applicationName;
         }
     }
 }
