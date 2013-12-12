@@ -218,9 +218,8 @@ namespace Squirrel.Client
             var subject = new Subject<Unit>();
 
             Task.Factory.StartNew(() => {
-                var pipeServer = new NamedPipeServerStream(GetPipeName(applicationName), PipeDirection.InOut);
-                while (true)
-                {
+                while (true) {
+                    var pipeServer = new NamedPipeServerStream(GetPipeName(applicationName), PipeDirection.InOut);
                     pipeServer.WaitForConnection();
                     try
                     {
@@ -238,6 +237,10 @@ namespace Squirrel.Client
                     catch (IOException ex)
                     {
                         log.ErrorException("Named pipe server failed", ex);
+                    }
+                    finally
+                    {
+                        pipeServer.Close();
                     }
                 }
             });
