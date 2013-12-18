@@ -1,7 +1,8 @@
 ﻿using System;
 using NuGet;
-using ReactiveUI.Routing;
-using ReactiveUI.Xaml;
+using ReactiveUIMicro.Xaml;
+using ReactiveUIMicro.Routing;
+using System.ComponentModel;
 
 namespace Squirrel.Client.WiXUi
 {
