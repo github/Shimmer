@@ -168,25 +168,37 @@ namespace Squirrel.Client
 
         public IObservable<Unit> ExecuteUninstall(Version version = null)
         {
-            int connectTimeout = 1000;
-            int waitForExitTimeout = 1000;
+            // Run uninstall
+            var updateManager = new UpdateManager("http://lol", BundledRelease.PackageName, FrameworkVersion.Net40, TargetRootDirectory);
 
-            // Request the app exit if it's running
-            // TODO: might want to adjust timeout depending on whether perceptability is an issue
+            return updateManager.FullUninstall(version)
+                .ObserveOn(RxApp.DeferredScheduler)
+                .Log(this, "Full uninstall")
+                .Finally(updateManager.Dispose);
+        }
+
+        public IObservable<bool> RequestExitAndWait(int connectionTimeout = 1000, int waitForExitTimeout = 1000)
+        {
+            return Observable.Start(() => requestExitAndWait(connectionTimeout, waitForExitTimeout), RxApp.TaskpoolScheduler);
+        }
+
+        bool requestExitAndWait(int connectionTimeout, int waitForExitTimeout)
+        {
+            // TODO: what if the app is running but doesn't respond in time?
+            // currently it's interpreted as the app being closed so the uninstall will proceed as usual
+
             var pipeClient = new NamedPipeClientStream(".", GetPipeName(BundledRelease.PackageName), PipeDirection.InOut, PipeOptions.None);
             bool connected = false;
             try {
-                pipeClient.Connect(connectTimeout);
+                pipeClient.Connect(connectionTimeout);
                 connected = true;
             } catch (TimeoutException) { }
 
-            if (connected)
-            {
+            if (connected) {
                 var buffer = new byte[validateBytes.Length];
                 pipeClient.Read(buffer, 0, validateBytes.Length);
 
-                if (buffer.SequenceEqual(validateBytes))
-                {
+                if (buffer.SequenceEqual(validateBytes)) {
                     pipeClient.Write(exitMessage, 0, exitMessage.Length);
                     log.Info("Attempted to request running instance to exit");
 
@@ -202,35 +214,28 @@ namespace Squirrel.Client
 
                     // Check for id 0 because GetProcessById might actually succeed even though the app closed
                     // The resulting Process has an id of 0 and will throw a Win32Exception on most access attempts
-                    if (process == null || process.Id == 0 || process.HasExited || process.WaitForExit(waitForExitTimeout))
+                    if (process == null || process.Id == 0 || process.HasExited || process.WaitForExit(waitForExitTimeout)) {
                         log.Info("Running instance exited");
-                    else
-                        log.Info("Running instance did not exit in time, continuing anyway");
-                }
-                else
-                {
+                        return true;
+                    } else {
+                        log.Info("Running instance did not exit in time");
+                        return false;
+                    }
+                } else {
                     log.Info("Connected to a named pipe but didn't respond or wasn't Squirrel");
+                    return true;
                 }
-            }
-            else
-            {
+            } else {
                 log.Info("No running instances found to request exit");
+                return true;
             }
-
-            // Run uninstall
-            var updateManager = new UpdateManager("http://lol", BundledRelease.PackageName, FrameworkVersion.Net40, TargetRootDirectory);
-
-            return updateManager.FullUninstall(version)
-                .ObserveOn(RxApp.DeferredScheduler)
-                .Log(this, "Full uninstall")
-                .Finally(updateManager.Dispose);
         }
         
         // TODO: Clean up
         // TODO: Should the client validate the server or the other way around? Should there be validation?
         private static readonly byte[] validateBytes = new[] { 'S', 'Q', 'U', 'I', 'R', 'R', 'E', 'L' }.Select(x => (byte)x).ToArray();
         private static readonly byte[] exitMessage = new[] { 'E', 'X', 'I', 'T' }.Select(x => (byte)x).ToArray();
-        public static IObservable<Unit> ListenForClose(string applicationName)
+        public static IObservable<Unit> ListenForExitRequest(string applicationName)
         {
             var log = LogManager.GetLogger<InstallManager>();
 
@@ -240,28 +245,22 @@ namespace Squirrel.Client
                 while (true) {
                     var pipeServer = new NamedPipeServerStream(GetPipeName(applicationName), PipeDirection.InOut);
                     pipeServer.WaitForConnection();
-                    try
-                    {
+                    try {
                         pipeServer.Write(validateBytes, 0, validateBytes.Length);
                         var message = new byte[8];
                         pipeServer.Read(message, 0, message.Length);
-                        if (message.Take(exitMessage.Length).SequenceEqual(exitMessage))
-                        {
+                        if (message.Take(exitMessage.Length).SequenceEqual(exitMessage)) {
                             int processId = Process.GetCurrentProcess().Id;
                             var processBytes = BitConverter.GetBytes(processId);
                             pipeServer.Write(processBytes, 0, processBytes.Length);
                             subject.OnNext(Unit.Default);
                             log.Info("Named pipe server received exit request; sent back process id");
-                        }
-                        else
+                        } else {
                             log.Info("Named pipe server received unknown message");
-                    }
-                    catch (IOException ex)
-                    {
+                        }
+                    } catch (IOException ex) {
                         log.ErrorException("Named pipe server failed", ex);
-                    }
-                    finally
-                    {
+                    } finally {
                         pipeServer.Close();
                     }
                 }
