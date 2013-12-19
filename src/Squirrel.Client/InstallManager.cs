@@ -14,6 +14,7 @@ using Squirrel.Client.Extensions;
 using Squirrel.Core;
 using System.IO.Pipes;
 using System.Security.Principal;
+using System.Diagnostics;
 
 namespace Squirrel.Client
 {
@@ -167,16 +168,17 @@ namespace Squirrel.Client
 
         public IObservable<Unit> ExecuteUninstall(Version version = null)
         {
+            int connectTimeout = 1000;
+            int waitForExitTimeout = 1000;
+
             // Request the app exit if it's running
             // TODO: might want to adjust timeout depending on whether perceptability is an issue
             var pipeClient = new NamedPipeClientStream(".", GetPipeName(BundledRelease.PackageName), PipeDirection.InOut, PipeOptions.None);
             bool connected = false;
-            try
-            {
-                pipeClient.Connect(1000);
+            try {
+                pipeClient.Connect(connectTimeout);
                 connected = true;
-            }
-            catch (TimeoutException) { }
+            } catch (TimeoutException) { }
 
             if (connected)
             {
@@ -187,6 +189,23 @@ namespace Squirrel.Client
                 {
                     pipeClient.Write(exitMessage, 0, exitMessage.Length);
                     log.Info("Attempted to request running instance to exit");
+
+                    var processIdBuffer = new byte[4];
+                    pipeClient.Read(processIdBuffer, 0, processIdBuffer.Length);
+                    int processId = BitConverter.ToInt32(processIdBuffer, 0);
+                    log.Info("Going to wait for running instance (" + processId + ") to exit");
+
+                    var process = default(Process);
+                    try {
+                        process = Process.GetProcessById(processId);
+                    } catch (ArgumentException) { } // Process specified by processId is not running
+
+                    // Check for id 0 because GetProcessById might actually succeed even though the app closed
+                    // The resulting Process has an id of 0 and will throw a Win32Exception on most access attempts
+                    if (process == null || process.Id == 0 || process.HasExited || process.WaitForExit(waitForExitTimeout))
+                        log.Info("Running instance exited");
+                    else
+                        log.Info("Running instance did not exit in time, continuing anyway");
                 }
                 else
                 {
@@ -228,8 +247,11 @@ namespace Squirrel.Client
                         pipeServer.Read(message, 0, message.Length);
                         if (message.Take(exitMessage.Length).SequenceEqual(exitMessage))
                         {
+                            int processId = Process.GetCurrentProcess().Id;
+                            var processBytes = BitConverter.GetBytes(processId);
+                            pipeServer.Write(processBytes, 0, processBytes.Length);
                             subject.OnNext(Unit.Default);
-                            log.Info("Named pipe server received exit request");
+                            log.Info("Named pipe server received exit request; sent back process id");
                         }
                         else
                             log.Info("Named pipe server received unknown message");
