@@ -36,7 +36,7 @@ function Write-VersionAssemblyInfo {
     }
 
     if ($numberOfReplacements -ne 3) {
-        Die "Expected to replace the version number in 3 places in AssemblyInfo.cs (AssemblyVersion, AssemblyFileVersion, AssemblyInformationalVersion) but actually replaced it in $numberOfReplacements"
+        Die "Expected to replace the version number in 3 places in $assemblyInfo (AssemblyVersion, AssemblyFileVersion, AssemblyInformationalVersion) but actually replaced it in $numberOfReplacements"
     }
 
     $newContent | Set-Content $assemblyInfo -Encoding UTF8
