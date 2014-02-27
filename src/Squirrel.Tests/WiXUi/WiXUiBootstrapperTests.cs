@@ -38,7 +38,6 @@ namespace Squirrel.Tests.WiXUi
             string dir;
             using (IntegrationTestHelper.WithFakeInstallDirectory(out dir)) {
                 var fixture = new WixUiBootstrapper(events.Object, null, router, null, dir);
-                RxApp.GetAllServices<ICreatesObservableForProperty>().Any().ShouldBeTrue();
 
                 Func<uint, int> convertHResult = hr => BitConverter.ToInt32(BitConverter.GetBytes(hr), 0);
 
@@ -78,7 +77,6 @@ namespace Squirrel.Tests.WiXUi
             string dir;
             using (IntegrationTestHelper.WithFakeInstallDirectory(out dir)) {
                 var fixture = new WixUiBootstrapper(events.Object, null, router, null, dir);
-                RxApp.GetAllServices<ICreatesObservableForProperty>().Any().ShouldBeTrue();
 
                 detectComplete.OnNext(new DetectPackageCompleteEventArgs("UserApplicationId", 0, PackageState.Absent));
 
@@ -109,7 +107,6 @@ namespace Squirrel.Tests.WiXUi
             string dir;
             using (IntegrationTestHelper.WithFakeInstallDirectory(out dir)) {
                 var fixture = new WixUiBootstrapper(events.Object, null, router, null, dir);
-                RxApp.GetAllServices<ICreatesObservableForProperty>().Any().ShouldBeTrue();
 
                 detectComplete.OnNext(new DetectPackageCompleteEventArgs("UserApplicationId", 0, PackageState.Absent));
 
@@ -162,7 +159,6 @@ namespace Squirrel.Tests.WiXUi
                 firstEvents.SetupGet(x => x.Action).Returns(LaunchAction.Install);
 
                 var firstFixture = new WixUiBootstrapper(firstEvents.Object, firstKernel, firstRouter, null, dir, targetRootDirectory);
-                RxApp.GetAllServices<ICreatesObservableForProperty>().Any().ShouldBeTrue();
 
                 mockPerformInstall(firstRouter, firstDetectPackage, firstPlanComplete, firstApplyComplete, firstEngine);
 
@@ -297,7 +293,6 @@ namespace Squirrel.Tests.WiXUi
                 secondEvents.SetupGet(x => x.Action).Returns(LaunchAction.Uninstall);
 
                 var secondFixture = new WixUiBootstrapper(secondEvents.Object, secondKernel, secondRouter, null, dir, targetRootDirectory);
-                RxApp.GetAllServices<ICreatesObservableForProperty>().Any().ShouldBeTrue();
 
                 mockPerformUninstall(secondDetectPackage, secondPlanComplete, secondApplyComplete, secondEngine);
 
