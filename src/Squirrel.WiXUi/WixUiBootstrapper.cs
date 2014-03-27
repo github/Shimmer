@@ -165,13 +165,13 @@ namespace Squirrel.WiXUi.ViewModels
                 }
 
                 if (wixEvents.Action == LaunchAction.Uninstall) {
-                    var appExitedIfRunning = installManager.RequestExitAndWait().Wait();
-                    if (!appExitedIfRunning) {
-                        // TODO: make UI ask whether to cancel/retry/force continue (restart needed)
-                        UserError.Throw(new UserError("App was open and was requested to exit, but didn't exit in time."
-                            + " Cancelling uninstall."));
-                        return;
-                    }
+                    // Try and get the app closed if it's listening for exit requests
+                    // If it isn't, or fails to exit in time, we'll mark it for deletion on restart anyway
+                    //
+                    // TODO: if it was listening for an exit request make a ui to ask
+                    // whether to cancel/try again/continue anyway (restart needed)
+                    // and/or tell the user to close the app
+                    installManager.RequestExitAndWait().Wait();
 
                     var task = installManager.ExecuteUninstall(BundledRelease.Version);
                     task.Subscribe(
