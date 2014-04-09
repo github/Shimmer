@@ -70,7 +70,7 @@ $srcFolder = "$rootFolder\src"
 
 $items = Get-ChildItem -Path "$srcFolder" -Filter "AssemblyInfo.cs" -Recurse
 
-$items = $items | Where-Object {$_.FullName.Contains("Squirrel.") -or $_.FullName.COntains("CreateReleasePackage")}
+$items = $items | Where-Object {$_.FullName.Contains("src\Squirrel.") -or $_.FullName.COntains("CreateReleasePackage")}
 
 $currentVersion = [System.Version](Read-VersionAssemblyInfo $items[0].FullName)
 
@@ -96,5 +96,6 @@ $newVersion = "$major.$minor.$patch"
 Write-Host "New version: $newVersion"
 
 foreach ($item in $items) {
+    Write-Host $item.FullName
     Write-VersionAssemblyInfo -assemblyInfo $item.FullName -version $newVersion
 }
