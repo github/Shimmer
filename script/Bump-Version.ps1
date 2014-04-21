@@ -36,7 +36,7 @@ function Write-VersionAssemblyInfo {
     }
 
     if ($numberOfReplacements -ne 3) {
-        Die "Expected to replace the version number in 3 places in AssemblyInfo.cs (AssemblyVersion, AssemblyFileVersion, AssemblyInformationalVersion) but actually replaced it in $numberOfReplacements"
+        Die "Expected to replace the version number in 3 places in $assemblyInfo (AssemblyVersion, AssemblyFileVersion, AssemblyInformationalVersion) but actually replaced it in $numberOfReplacements"
     }
 
     $newContent | Set-Content $assemblyInfo -Encoding UTF8
@@ -70,7 +70,9 @@ $srcFolder = "$rootFolder\src"
 
 $items = Get-ChildItem -Path "$srcFolder" -Filter "AssemblyInfo.cs" -Recurse
 
-$items = $items | Where-Object {$_.FullName.Contains("Squirrel.") -or $_.FullName.COntains("CreateReleasePackage")}
+# Get AssemblyInfo.cs files of projects that contain "Squirrel." or are "CreateReleasePackage"
+# However the solution itself might be in a folder that contains "Squirrel." so only look at the last bit
+$items = $items | Where-Object { ($_.FullName -replace "^.*(?=\\(.*?)\\Properties\\AssemblyInfo\.cs)", "").Contains("Squirrel.") -or $_.FullName.Contains("CreateReleasePackage") }
 
 $currentVersion = [System.Version](Read-VersionAssemblyInfo $items[0].FullName)
 
